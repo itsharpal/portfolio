@@ -1,1 +1,41 @@
 @import "tailwindcss";
+
+/* Tailwind v4 defaults `dark:` to prefers-color-scheme. next-themes toggles a
+   class, so the variant has to be redefined against it. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* `inline` is required: these values reference the next/font variables, which
+   are defined on <html>. Without it the utilities resolve to the fallback. */
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-rule: var(--rule);
+  --color-accent: var(--accent);
+}
+
+:root {
+  --bg: #ffffff;
+  --fg: #0a0a0a;
+  --muted: #5c5c5c;
+  --rule: #e5e5e5;
+  /* Lighter in dark, darker in light — the accent is the one token that has to
+     shift per theme to hold AA against the background it sits on. */
+  --accent: #2563eb;
+}
+
+.dark {
+  --bg: #0a0a0a;
+  --fg: #fafafa;
+  --muted: #a1a1a1;
+  --rule: #262626;
+  --accent: #3b82f6;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+}
