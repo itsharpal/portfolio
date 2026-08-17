@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Footer } from "@/components/footer";
-import { Nav } from "@/components/nav";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
@@ -32,9 +31,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="font-mono text-[18px] antialiased">
         <Providers>
+          {/* The nav differs per section — the home page gets the full nav,
+              case studies get `← work` — so each section layout renders its
+              own. Everything common stays here. */}
           <div className="mx-auto max-w-2xl px-6">
-            <Nav />
-            <main>{children}</main>
+            {children}
             <Footer />
           </div>
         </Providers>
