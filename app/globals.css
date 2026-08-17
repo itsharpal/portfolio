@@ -39,3 +39,13 @@ body {
   background: var(--bg);
   color: var(--fg);
 }
+
+/* Element-level per spec §3.5. The reference holds h1 at 36px and lets it wrap;
+   that is fine for a name but wraps a case study title to four lines on a
+   phone, so this scales instead. Case study pages inherit it unchanged. */
+h1 {
+  font-size: clamp(26px, 7.5vw, 36px);
+  font-weight: 900;
+  letter-spacing: -1.08px;
+  line-height: 1.15;
+}
