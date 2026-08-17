@@ -13,6 +13,9 @@ export const site = {
   name: "Harpal Chapatwala",
   role: "Backend engineer",
   location: "Surat, India",
+  // Production origin. Metadata, sitemap and robots all derive from this, so a
+  // custom domain later is one edit.
+  url: "https://harpal-chapatwala.vercel.app",
   email: "harpal.chapatwala.official@gmail.com",
   linkedin: "https://www.linkedin.com/in/harpalvc",
   github: "https://github.com/itsharpal",

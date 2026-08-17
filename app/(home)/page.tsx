@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Chip } from "@/components/chip";
+import { ContactButton } from "@/components/contact-button";
 import { SectionHeading } from "@/components/section-heading";
 import { projects, roles, site, skills, work } from "@/content/site";
 
@@ -129,48 +130,30 @@ export default function Home() {
 
       <section id="contact" className="mt-24 scroll-mt-8">
         <SectionHeading>Contact</SectionHeading>
-        <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-[15px]">
-          {/* The address is one unbreakable token and overflows below ~340px,
-              so it is allowed to break rather than push the page wider. */}
-          <li className="min-w-0 max-w-full">
-            <a
-              href={`mailto:${site.email}`}
-              className={`${inlineLink} wrap-anywhere`}
-            >
-              {site.email}
-            </a>
-          </li>
-          <li>
-            <a
-              href={site.linkedin}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={inlineLink}
-            >
-              linkedin ↗
-            </a>
-          </li>
-          <li>
-            <a
-              href={site.github}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={inlineLink}
-            >
-              github ↗
-            </a>
-          </li>
-          <li>
-            <a
-              href={site.resume}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={inlineLink}
-            >
-              résumé ↗
-            </a>
-          </li>
-        </ul>
+        <p className="mt-6 text-[15px] leading-relaxed text-muted">
+          The fastest way to reach me is email — I read everything that
+          isn&rsquo;t a template.
+        </p>
+
+        <div className="mt-7 flex flex-wrap gap-3">
+          <ContactButton
+            href={`mailto:${site.email}`}
+            label="Email"
+            icon="email"
+            external={false}
+          />
+          <ContactButton
+            href={site.linkedin}
+            label="LinkedIn"
+            icon="linkedin"
+          />
+          <ContactButton href={site.github} label="GitHub" icon="github" />
+          <ContactButton href={site.resume} label="Résumé" icon="resume" />
+        </div>
+
+        <p className="mt-6 text-[13px] text-muted wrap-anywhere">
+          {site.email}
+        </p>
       </section>
     </>
   );

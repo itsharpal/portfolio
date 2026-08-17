@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Footer } from "@/components/footer";
 import { Providers } from "@/components/providers";
+import { site } from "@/content/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,10 +17,30 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
 });
 
+const description = `${site.role} at AppsStoneLab Technologies. Written case studies on schema migration, data modelling and query performance.`;
+
 export const metadata: Metadata = {
-  title: "Harpal Chapatwala — Backend engineer",
-  description:
-    "Backend engineer at AppsStoneLab Technologies. Written case studies on licensing migrations, data modelling and query performance.",
+  // Without this, Open Graph URLs resolve against localhost and every share
+  // renders no card — the exact bug the reference site ships (spec §5.2).
+  metadataBase: new URL(site.url),
+  title: {
+    default: `${site.name} — ${site.role}`,
+    template: `%s — ${site.name}`,
+  },
+  description,
+  openGraph: {
+    type: "website",
+    siteName: site.name,
+    title: `${site.name} — ${site.role}`,
+    description,
+    url: site.url,
+    locale: "en_GB",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${site.name} — ${site.role}`,
+    description,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

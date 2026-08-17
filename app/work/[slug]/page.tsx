@@ -24,9 +24,16 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const item = work.find((entry) => entry.slug === slug);
   if (!item) return {};
 
+  // The name suffix comes from the title template in the root layout — adding
+  // it here too produced "… — Harpal Chapatwala — Harpal Chapatwala".
   return {
-    title: `${item.title} — ${site.name}`,
+    title: item.title,
     description: item.hook,
+    openGraph: {
+      title: `${item.title} — ${site.name}`,
+      description: item.hook,
+      url: new URL(`/work/${slug}`, site.url).toString(),
+    },
   };
 }
 
