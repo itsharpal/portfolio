@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { site } from "@/content/site";
 import { ThemeToggle } from "./theme-toggle";
 
 const link =
@@ -21,7 +22,7 @@ export function Nav() {
           work
         </Link>
         <a
-          href="/resume.pdf"
+          href={site.resume}
           target="_blank"
           rel="noopener noreferrer"
           className={`hidden sm:inline ${link}`}
