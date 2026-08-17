@@ -24,6 +24,14 @@ const components: MDXComponents = {
     />
   ),
   li: (props) => <li className="pl-1" {...props} />,
+  // The quoted passages are the client's words, not Harpal's — they need to
+  // read as someone else speaking.
+  blockquote: (props) => (
+    <blockquote
+      className="mt-6 border-l-2 border-rule pl-5 text-muted [&>p]:text-[17px] [&>p:first-child]:mt-0"
+      {...props}
+    />
+  ),
   strong: (props) => <strong className="font-[650]" {...props} />,
   hr: () => <hr className="mt-12 border-rule" />,
   a: (props) => (

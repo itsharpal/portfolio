@@ -130,8 +130,13 @@ export default function Home() {
       <section id="contact" className="mt-24 scroll-mt-8">
         <SectionHeading>Contact</SectionHeading>
         <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-[15px]">
-          <li>
-            <a href={`mailto:${site.email}`} className={inlineLink}>
+          {/* The address is one unbreakable token and overflows below ~340px,
+              so it is allowed to break rather than push the page wider. */}
+          <li className="min-w-0 max-w-full">
+            <a
+              href={`mailto:${site.email}`}
+              className={`${inlineLink} wrap-anywhere`}
+            >
               {site.email}
             </a>
           </li>

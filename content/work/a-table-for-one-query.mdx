@@ -1,17 +1,115 @@
-export const inShort = "Draft in progress — this case study has not been written yet.";
+import { Diagram } from "@/components/diagram";
+import { clients } from "@/content/site";
+
+export const inShort =
+  "A routine sync joined three large tables on every run, and at real data volume the cost showed. I built a table shaped for that one question instead of tuning the join further.";
 
 ## The problem
 
-Draft in progress.
+On {clients.books}, each merchant syncs a subset of a shared catalogue to their
+own storefront. Working out what belongs in that subset meant walking the
+category tree and joining categories to their products and those products to the
+per-store product table — three tables, the largest of them in the tens of
+millions of rows.
+
+Categories nest, so the traversal was recursive: expand a category to its
+descendants, then collect the products under all of them. Recursive traversal
+joined to a table that size is expensive per run, and this ran per store, on a
+schedule.
+
+The symptom was worst-case duration, not average. Most stores were fine. The
+large ones took long enough that syncs overlapped their own schedule, and once
+that happens the backlog is self-sustaining.
+
+I spent real time on the query itself first — restructuring the recursion,
+comparing plans, getting indexes onto the columns the planner actually wanted.
+It got better. It did not get better enough, and the reason was structural: the
+query was recomputing a category-to-product relationship that changes far less
+often than it is read.
 
 ## What I did
 
-Draft in progress.
+Built a derived table keyed the way the question is asked — category to product,
+already flattened — and pointed the sync at it.
+
+<Diagram
+  caption="A recursive join across three tables becomes a single indexed read from a table built for that question."
+  boxes={[
+    {
+      id: "categories",
+      label: "categories",
+      x: 0,
+      y: 0,
+      w: 190,
+      phase: "before",
+    },
+    {
+      id: "product_categories",
+      label: "product_categories",
+      x: 0,
+      y: 62,
+      w: 190,
+      phase: "before",
+    },
+    {
+      id: "products",
+      label: "products",
+      x: 0,
+      y: 124,
+      w: 190,
+      phase: "before",
+    },
+    {
+      id: "derived",
+      label: "category-wise products",
+      x: 392,
+      y: 62,
+      w: 232,
+      phase: "after",
+    },
+  ]}
+  edges={[
+    { from: "categories", to: "derived", phase: "after" },
+    { from: "product_categories", to: "derived", phase: "after" },
+    { from: "products", to: "derived", phase: "after" },
+  ]}
+/>
+
+The recursion happens when the relationship changes, not every time a store
+syncs. At read time the sync does an indexed lookup against one table.
+
+**Worst-case query time fell by more than an order of magnitude.**
+
+The trade is explicit and worth naming: I took on a consistency problem to get
+rid of a latency problem. A derived table is a cache with a schema, and it is
+wrong the moment its sources move and it doesn't.
 
 ## What I decided not to do
 
-Draft in progress.
+I stopped tuning the join. Past a point, more index work on a recursive query
+over three growing tables is effort spent making the wrong shape faster.
+
+I didn't reach for a materialised view or a caching layer. The database doesn't
+give me an incrementally maintained view here, and a cache in front of the query
+would have kept the expensive query on the cold path and added an eviction
+policy to reason about. The table is the cache, and it's one I control.
+
+Index migrations and splitting the hourly job into per-organisation runs both
+happened around the same time, and both helped — a slow tenant no longer delayed
+the rest. Neither is why the number moved, and I'd rather say that plainly than
+present four changes as equal contributors to one result.
 
 ## How it shipped
 
-Draft in progress.
+The interesting work wasn't building the table, it was keeping it honest. I
+wrote the sync that maintains it from its sources, then went looking for rows
+where the derived table and the source tables disagreed — because the failure
+mode of this design isn't slowness, it's silently serving a stale answer that
+looks fine.
+
+Reconciling those mismatches was where the design got tested. Every one of them
+was a path that mutated a source without telling the derived table, and each one
+had to be found rather than reasoned about.
+
+If I were handing this over, that's the part I'd point at. The table is easy.
+Knowing what invalidates it is the whole job.

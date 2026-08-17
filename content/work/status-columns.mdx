@@ -1,17 +1,110 @@
-export const inShort = "Draft in progress — this case study has not been written yet.";
+import { Diagram } from "@/components/diagram";
+import { clients } from "@/content/site";
+
+export const inShort =
+  "Several independent sync steps reported into one status field, so nobody could ask which step had failed. Giving each step its own column turned failure into something you could query.";
 
 ## The problem
 
-Draft in progress.
+On {clients.books}, pushing a product to a merchant's storefront is five
+operations, not one: remove old metadata, write new metadata, update the price,
+publish the product, attach a delivery profile. Any of them can fail on its own.
+
+All five reported into a single JSON column — a dictionary of step name to
+outcome, one per row.
+
+Two things follow from that. Finding the products that failed a given step means
+evaluating a JSON path on every row, and MySQL won't index a key inside a JSON
+value without a generated column standing in for it. So the query degrades with
+catalogue size, and catalogue size is the product.
+
+Retrying one step is worse. The other four outcomes live in the same value, so a
+retry is read-modify-write on the whole document, and it races every other
+worker touching that row. There was no set of "products whose price update
+failed" to hand to a queue.
+
+Both symptoms come from the same thing: five independent facts stored as one
+value.
 
 ## What I did
 
-Draft in progress.
+Designed the replacement and implemented it. One small integer column per step,
+JSON field dropped.
+
+<Diagram
+  caption="One JSON document holding five outcomes becomes five columns, each independently queryable."
+  boxes={[
+    {
+      id: "blob",
+      label: "job_status  ·  JSON",
+      x: 0,
+      y: 4,
+      w: 236,
+      phase: "before",
+      rows: [
+        { label: "meta_remove" },
+        { label: "meta_update" },
+        { label: "price_update" },
+        { label: "publication" },
+        { label: "delivery_profile" },
+      ],
+    },
+    {
+      id: "cols",
+      label: "status columns",
+      x: 392,
+      y: 4,
+      w: 236,
+      phase: "after",
+      rows: [
+        { label: "meta_remove_status" },
+        { label: "meta_update_status" },
+        { label: "price_update_status" },
+        { label: "publication_status" },
+        { label: "delivery_profile_status" },
+      ],
+    },
+  ]}
+  edges={[{ from: "blob", to: "cols", phase: "after", label: "split" }]}
+/>
+
+Four states per column: pending, succeeded, failed, in flight.
+
+The fourth earns its place. Without it, a row abandoned by a crashed worker is
+indistinguishable from one nothing has touched, and a sweeper picking up
+failures either misses the first or double-processes the second.
+
+After that, failure is a column. Failed price updates are an indexed equality
+check, the retry queue is populated by a select, and per-step failure rates are
+a group-by.
 
 ## What I decided not to do
 
-Draft in progress.
+Generated columns over the JSON keys were the smaller fix, and MySQL's own
+answer to this. I passed on them. They make reads indexable and leave every
+write as read-modify-write on the full document, and you end up maintaining two
+representations of one fact that agree only by convention.
+
+I didn't collapse the five into a single overall status. Much smaller change,
+and it discards the only thing that makes retry possible — knowing *which* step
+failed rather than that something did.
+
+I kept the state list at four. Every additional state is a branch in every
+consumer, and status fields rot by accumulating states that describe the
+implementation rather than the work.
 
 ## How it shipped
 
-Draft in progress.
+The sync writes these values continuously, so the change had to be safe while
+traffic was live. The columns default to pending, which makes every existing row
+valid the moment the column exists — no backfill standing between the migration
+and the code that reads it.
+
+Verification inverted the original complaint. Not "are the columns populated"
+but "are the expensive questions now cheap": select one step's failures, confirm
+the plan hits an index, retry that set, confirm the other four columns come back
+untouched.
+
+That last check is the one that mattered. The point was never that the query got
+faster. It was that one step could fail, be found, and be retried without
+disturbing the four that had already succeeded.

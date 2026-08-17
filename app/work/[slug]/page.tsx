@@ -47,37 +47,44 @@ export default async function CaseStudy({ params }: Params) {
   const next = work[index + 1];
 
   return (
-    <article>
-      <header>
-        <p className="font-mono text-[15px] text-accent">{item.n}</p>
-        <h1 className="mt-2 font-mono">{item.title}</h1>
-        <p className="mt-3 font-mono text-[15px] text-muted">{item.meta}</p>
-      </header>
+    <>
+      <article>
+        <header>
+          <p className="font-mono text-[15px] text-accent">{item.n}</p>
+          <h1 className="mt-2 font-mono">{item.title}</h1>
+          <p className="mt-3 font-mono text-[15px] text-muted">{item.meta}</p>
+        </header>
 
-      {/* Part 1 of the template — the only part a non-engineer needs. */}
-      <div className="mt-10 border border-rule p-5 font-mono text-[15px] leading-[1.65]">
-        <p className="text-muted">In short</p>
-        <p className="mt-2">{inShort}</p>
-      </div>
+        {/* Part 1 of the template — the only part a non-engineer needs. */}
+        <div className="mt-10 border border-rule p-5 font-mono text-[15px] leading-[1.65]">
+          <p className="text-muted">In short</p>
+          <p className="mt-2">{inShort}</p>
+        </div>
 
-      <Body />
+        <Body />
 
-      <nav className="mt-16 flex justify-between gap-8 border-t border-rule pt-8 font-mono text-[15px]">
-        {previous ? (
-          <Link href={`/work/${previous.slug}`} className={footLink}>
-            ← {previous.title}
-          </Link>
-        ) : (
-          <span />
-        )}
-        {next ? (
-          <Link href={`/work/${next.slug}`} className={`${footLink} text-right`}>
-            {next.title} →
-          </Link>
-        ) : (
-          <span />
-        )}
-      </nav>
-    </article>
+        {/* Stacks on a phone, two columns from 640px. The arrow sits on the
+          label line so it can never be orphaned by a wrapping title. */}
+        <nav className="mt-16 grid gap-8 border-t border-rule pt-8 font-mono text-[15px] sm:grid-cols-2">
+          {previous ? (
+            <Link href={`/work/${previous.slug}`} className={footLink}>
+              <span className="block text-[13px]">← previous</span>
+              <span className="mt-1 block text-balance">{previous.title}</span>
+            </Link>
+          ) : null}
+          {next ? (
+            <Link
+              href={`/work/${next.slug}`}
+              className={`${footLink} sm:text-right ${
+                previous ? "" : "sm:col-start-2"
+              }`}
+            >
+              <span className="block text-[13px]">next →</span>
+              <span className="mt-1 block text-balance">{next.title}</span>
+            </Link>
+          ) : null}
+        </nav>
+      </article>
+    </>
   );
 }

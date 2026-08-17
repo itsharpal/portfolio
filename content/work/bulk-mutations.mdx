@@ -1,17 +1,117 @@
-export const inShort = "Draft in progress — this case study has not been written yet.";
+import { Diagram } from "@/components/diagram";
+import { clients } from "@/content/site";
+
+export const inShort =
+  "Three background jobs ran after every product sync, each issuing its own per-item API calls and each able to fail on its own. Replacing them with one batched call removed the failure mode instead of retrying around it.";
 
 ## The problem
 
-Draft in progress.
+After a product sync on {clients.books}, three internal queue jobs ran: one
+activated the store's location, one assigned products to a delivery profile, one
+pushed inventory quantities. Each walked the synced products and issued its own
+per-item API calls.
+
+The jobs were independent but the operations were not. A product has to exist
+before inventory can be set against it; a location has to be active before it
+means anything. The queue gave no ordering guarantee, so correctness depended on
+three jobs happening to run in an order nothing enforced.
+
+Most of the time they did. Under a large catalogue they didn't — the window
+between jobs widened, and failures showed up that had nothing to do with the
+data being wrong. Retrying usually fixed it, which is the tell: a failure that a
+retry reliably fixes isn't a failure, it's a race.
+
+Per-item calls were the second half. Three jobs each iterating the same product
+set is three passes and a request per product per pass, against an API that
+rate-limits.
 
 ## What I did
 
-Draft in progress.
+Collapsed all three into a single bulk mutation submitted once, after sync.
+
+<Diagram
+  caption="Three independently scheduled jobs become one batched submission with a defined order."
+  boxes={[
+    {
+      id: "j1",
+      label: "queue job",
+      x: 0,
+      y: 0,
+      w: 168,
+      phase: "before",
+      rows: [{ label: "activate location" }],
+    },
+    {
+      id: "j2",
+      label: "queue job",
+      x: 0,
+      y: 74,
+      w: 168,
+      phase: "before",
+      rows: [{ label: "delivery profile" }],
+    },
+    {
+      id: "j3",
+      label: "queue job",
+      x: 0,
+      y: 148,
+      w: 168,
+      phase: "before",
+      rows: [{ label: "inventory update" }],
+    },
+    {
+      id: "bulk",
+      label: "bulk mutation",
+      x: 392,
+      y: 74,
+      w: 224,
+      phase: "after",
+      rows: [{ label: "all three, batched" }],
+    },
+  ]}
+  edges={[
+    { from: "j1", to: "bulk", phase: "after" },
+    { from: "j2", to: "bulk", phase: "after" },
+    { from: "j3", to: "bulk", phase: "after" },
+  ]}
+/>
+
+The platform's bulk API takes a batch of operations and runs them
+asynchronously, reporting back when the batch completes. That does two things at
+once. The three operations are now expressed in one place with a defined order,
+so the race has nowhere to live. And the request count stops scaling with the
+number of products.
+
+The argument I'd make for this change isn't the throughput. It's that the
+previous design had a class of failure in it — ordering between independently
+scheduled jobs — and this one doesn't. You can't retry your way out of a
+category of bug. You can only stop writing it down.
 
 ## What I decided not to do
 
-Draft in progress.
+The cheap fix was chaining: have each job enqueue the next, so ordering is
+guaranteed by construction. It works, and I didn't do it. It keeps three jobs,
+three failure points and three sets of retry semantics, and it converts a
+parallel pipeline into a serial one — slower, with the same per-item call volume
+that was the other half of the problem.
+
+Adding a dependency scheduler to the queue was the same instinct at more expense:
+infrastructure to manage an ordering problem that stops existing if the three
+operations are one operation.
+
+I also left the sync itself alone. It was not what was failing. The failures were
+downstream of it, and widening the change to include the thing that worked would
+have made the result harder to attribute.
 
 ## How it shipped
 
-Draft in progress.
+Bulk operations are asynchronous, so "submitted" is not "done" — the flow had to
+handle a batch that completes after the request that started it, including
+partial failure inside an otherwise successful batch. Per-item error handling
+became per-batch reconciliation, which is more code in one place and much less
+spread across three.
+
+I checked it against a large catalogue rather than a convenient one, because the
+old design was correct on small inputs. That was the whole difficulty with it:
+it passed every test that didn't take long enough for the gap between jobs to
+matter.

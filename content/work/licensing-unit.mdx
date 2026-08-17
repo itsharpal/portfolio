@@ -1,17 +1,41 @@
 import { Diagram } from "@/components/diagram";
+import { clients } from "@/content/site";
 
-export const inShort = "Draft in progress — this case study has not been written yet.";
+export const inShort =
+  "A person and the card they published were the same database record. Billing counted the wrong thing, and the analytics credited the wrong person.";
 
 ## The problem
 
-Draft in progress.
+This was {clients.cards}. The client's requirements document named the fault in
+its opening paragraph, and it was blunt about the cost:
+
+> Currently, within a client account, a user and a microsite are treated as the
+> same entity. This causes confusion, especially when a client wants to reassign
+> a microsite to a new person. [...] the custom URL (which often includes the
+> original user's name) and the associated analytics remain unchanged, leading
+> to inaccurate reporting and data inconsistencies.
+
+One record stood for two different things: a person who signs in, and a
+published card that a company pays for. Editing the card's name and email
+changed what a visitor saw, but the record underneath still belonged to the
+original person. The public URL kept their name. The reporting kept crediting
+them.
+
+That single conflation had been arriving as three separate complaints —
+reassignment doesn't work, the URLs are wrong, the analytics are wrong. They
+were not three problems. They were one modelling mistake seen from three
+angles.
+
+It was a billing problem too. Plan quantity had always been counted in people,
+so a company paid per seat. Once one person could hold more than one card, the
+licence had to move with the card.
 
 ## What I did
 
-Draft in progress.
+I separated the two ideas and moved the licensed unit onto the card.
 
 <Diagram
-  caption="The licence and the published site move off the user record onto a record of their own."
+  caption="The licence and the published site move off the person's record onto a record of their own."
   boxes={[
     {
       id: "users",
@@ -44,10 +68,65 @@ Draft in progress.
   edges={[{ from: "users", to: "microsites", phase: "after", label: "owns" }]}
 />
 
+The billing columns across the subscription, plan, cart, order, coupon and
+discount tables were renamed from a headcount to a card count, and the gates
+that had blocked adding people were removed. People became unlimited. Cards
+became the thing you buy.
+
+Reassignment stopped being an edit. Handing a card to someone else archives the
+existing one, creates a new one for the new owner, and carries the site content
+and its edit history across. The endpoint refuses the cases that would quietly
+corrupt something: a card that is already archived, a transfer to the person who
+already owns it, and an invitee who declined, cancelled, or never answered.
+
+Published URLs had to survive all of it. A proposed slug is checked against
+company slugs, retired company slugs, retired personal slugs, and the other
+cards in the same company before it is accepted. Changing a slug records the old
+one as a redirect automatically, and any redirect already pointing at the new
+slug is removed in the same step — so a URL never resolves through a hop back to
+itself.
+
 ## What I decided not to do
 
-Draft in progress.
+The word "user" appeared in far more places than the licence did. Renaming all
+of them would have been consistent, and wrong.
+
+The analytics counters count people, not licences. They kept their names,
+because a company genuinely does want to know how many people it has, and
+renaming them would have quietly changed what a number on a dashboard meant.
+
+Two flags used "user" to mean something else entirely — who is allowed to edit a
+template, and whether an order came from a customer or from staff. Same word,
+unrelated concept. Left alone.
+
+The administrative surface was specified in full and deferred to a second phase.
+It is internal, it is not on the customer path, and folding it into the same
+change would have doubled the area under test for no customer-visible benefit.
+
+One API field kept its old name. Renaming it is a hard cutover that breaks the
+frontend the moment it lands, so it waits and ships in lockstep with the
+frontend rather than ahead of it.
 
 ## How it shipped
 
-Draft in progress.
+The renames preserve data, so there was no backfill to write — but they had to
+run before the code deployed, because the code refers to the new column names
+and would crash against the old schema.
+
+One coordination step sat outside the codebase entirely. A property had to be
+created in the CRM before deploy; without it the sync does not fail, it silently
+drops the field, which is worse than failing.
+
+Verification was manual and written before it was needed: cap a company's
+licences, add more people than the cap and confirm none are blocked, create
+cards up to the cap, confirm the next is refused, release one and confirm it is
+accepted, then reduce the subscription quantity and watch what happens.
+Rollback was the migrations in reverse.
+
+The work is built and reviewed. It has not been released.
+
+That last verification step is the one I would point at. When a subscription's
+quantity drops below the number of active cards, the excess are not deleted and
+not archived. They are converted back to the free digital card that every person
+already gets. The company loses the licence, not the content — a downgrade
+expressed as a change of type rather than a deletion.
