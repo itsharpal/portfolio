@@ -18,9 +18,13 @@ export function Nav() {
       <div className="flex items-center gap-6">
         {/* Hidden on mobile — spec §3.5 collapses the nav to `HC.` plus the
             toggle. Both destinations remain reachable from the page body. */}
-        <Link href="/#work" className={`hidden sm:inline ${link}`}>
+        {/* A plain anchor, not next/link. This nav only renders on the home
+            page, so the target is always on this page — and a native anchor
+            re-scrolls every time it is activated, whereas next/link sees the
+            hash already set on a second click and does nothing. */}
+        <a href="#work" className={`hidden sm:inline ${link}`}>
           work
-        </Link>
+        </a>
         <a
           href={site.resume}
           target="_blank"

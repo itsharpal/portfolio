@@ -4,9 +4,6 @@ import { ContactButton } from "@/components/contact-button";
 import { SectionHeading } from "@/components/section-heading";
 import { projects, roles, site, skills, work } from "@/content/site";
 
-const inlineLink =
-  "text-muted underline underline-offset-4 transition-colors hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent";
-
 export default function Home() {
   return (
     <>
@@ -16,27 +13,20 @@ export default function Home() {
           {site.role} · {site.location}
         </p>
         <p className="mt-8 leading-relaxed">{site.bio}</p>
-        <p className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[15px]">
-          <a href={`mailto:${site.email}`} className={inlineLink}>
-            email
-          </a>
-          <a
+        <div className="mt-8 flex flex-wrap gap-3">
+          <ContactButton
+            href={`mailto:${site.email}`}
+            label="Email"
+            icon="email"
+            external={false}
+          />
+          <ContactButton
             href={site.linkedin}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={inlineLink}
-          >
-            linkedin ↗
-          </a>
-          <a
-            href={site.github}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={inlineLink}
-          >
-            github ↗
-          </a>
-        </p>
+            label="LinkedIn"
+            icon="linkedin"
+          />
+          <ContactButton href={site.github} label="GitHub" icon="github" />
+        </div>
       </section>
 
       <section id="work" className="mt-24 scroll-mt-8">

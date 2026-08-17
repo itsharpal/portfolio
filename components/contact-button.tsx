@@ -77,11 +77,11 @@ export function ContactButton({
     <a
       href={href}
       {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-      className="group inline-flex items-center gap-2.5 border border-rule px-4 py-2.5 text-[15px] text-muted transition-colors hover:border-fg hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      className="group inline-flex items-center gap-3 rounded-md border border-rule px-5 py-3 text-[15px] text-muted transition-colors hover:border-fg hover:text-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
     >
       <Glyph icon={icon} />
       <span>{label}</span>
-      <span className="ml-1 transition-transform group-hover:translate-x-1">
+      <span className="ml-3 transition-transform group-hover:translate-x-1">
         →
       </span>
     </a>

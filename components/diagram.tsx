@@ -30,7 +30,14 @@ function boxHeight(box: DiagramBox) {
   return HEAD_H + (box.rows?.length ?? 0) * ROW_H + 10;
 }
 
-function phaseClass(phase: Phase = "both") {
+// A box tagged "before" is the shape the data used to have. It stays on screen
+// — the diagram is a comparison, and half a comparison is unreadable. Only the
+// things that genuinely move (rows) or re-attach (edges) fade out.
+function boxClass(phase: Phase = "both") {
+  return phase === "after" ? "diagram-after" : "";
+}
+
+function markClass(phase: Phase = "both") {
   if (phase === "before") return "diagram-before";
   if (phase === "after") return "diagram-after";
   return "";
@@ -99,7 +106,7 @@ export function Diagram({
             const mid = (x1 + x2) / 2;
 
             return (
-              <g key={`edge-${i}`} className={phaseClass(edge.phase)}>
+              <g key={`edge-${i}`} className={markClass(edge.phase)}>
                 <path
                   d={`M ${x1} ${y1} C ${mid} ${y1}, ${mid} ${y2}, ${x2 - 7} ${y2}`}
                   fill="none"
@@ -131,7 +138,7 @@ export function Diagram({
           })}
 
           {boxes.map((box) => (
-            <g key={box.id} className={phaseClass(box.phase)}>
+            <g key={box.id} className={boxClass(box.phase)}>
               <rect
                 x={box.x}
                 y={box.y}
@@ -168,7 +175,7 @@ export function Diagram({
                   y={box.y + HEAD_H + 12 + i * ROW_H}
                   fontSize="12"
                   fill="currentColor"
-                  className={`${phaseClass(row.phase)} ${
+                  className={`${markClass(row.phase)} ${
                     row.phase && row.phase !== "both"
                       ? "text-accent"
                       : "text-muted"
