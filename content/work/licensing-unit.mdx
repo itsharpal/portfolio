@@ -1,3 +1,5 @@
+import { Diagram } from "@/components/diagram";
+
 export const inShort = "Draft in progress — this case study has not been written yet.";
 
 ## The problem
@@ -7,6 +9,40 @@ Draft in progress.
 ## What I did
 
 Draft in progress.
+
+<Diagram
+  caption="The licence and the published site move off the user record onto a record of their own."
+  boxes={[
+    {
+      id: "users",
+      label: "users",
+      x: 0,
+      y: 4,
+      w: 200,
+      rows: [
+        { label: "id", phase: "both" },
+        { label: "email", phase: "both" },
+        { label: "license_id", phase: "before" },
+        { label: "website_id", phase: "before" },
+      ],
+    },
+    {
+      id: "microsites",
+      label: "microsites",
+      x: 380,
+      y: 4,
+      w: 220,
+      phase: "after",
+      rows: [
+        { label: "id", phase: "both" },
+        { label: "user_id", phase: "both" },
+        { label: "license_id", phase: "both" },
+        { label: "website_id", phase: "both" },
+      ],
+    },
+  ]}
+  edges={[{ from: "users", to: "microsites", phase: "after", label: "owns" }]}
+/>
 
 ## What I decided not to do
 

@@ -40,6 +40,48 @@ body {
   color: var(--fg);
 }
 
+/* Diagrams (spec §3.6). Two layers overlaid: the state before the change and
+   the state after it. Scrolling the diagram into view cross-fades one into the
+   other, once. Only opacity and transform are animated. */
+.diagram-before {
+  opacity: 1;
+  transition:
+    opacity 600ms ease,
+    transform 600ms ease;
+}
+
+.diagram-after {
+  opacity: 0;
+  transform: translateX(-6px);
+  transition:
+    opacity 600ms ease,
+    transform 600ms ease;
+}
+
+.diagram-in-view .diagram-before {
+  opacity: 0;
+}
+
+.diagram-in-view .diagram-after {
+  opacity: 1;
+  transform: none;
+}
+
+/* Reduced motion is handled in CSS rather than JavaScript, so the final state
+   is what paints first — not a jump once the element is scrolled to. */
+@media (prefers-reduced-motion: reduce) {
+  .diagram-before {
+    opacity: 0;
+    transition: none;
+  }
+
+  .diagram-after {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
 /* Element-level per spec §3.5. The reference holds h1 at 36px and lets it wrap;
    that is fine for a name but wraps a case study title to four lines on a
    phone, so this scales instead. Case study pages inherit it unchanged. */
